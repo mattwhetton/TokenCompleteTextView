@@ -18,6 +18,8 @@ using Object = Java.Lang.Object;
 using Math = System.Math;
 using String = System.String;
 using Codenutz.Controls.Extensions;
+using Codenutz.Controls;
+using Java.Interop;
 
 namespace Codenutz.Controls
 {
@@ -38,19 +40,21 @@ namespace Codenutz.Controls
 		private T _selectedItem;
 		private bool _isHintVisible = false;
 		private List<TokenImageSpan<T>> _hiddenSpans;
-		private TokenDeleteStyle _deletionStyle = TokenDeleteStyle._Parent;
-		private bool _shouldFocusNext = false;
+	    private bool _shouldFocusNext = false;
 		private TokenTextWatcher<T> _textWatcher;
 		private TokenSpanWatcher<T> _spanWatcher;
 		private string _prefix;
 		private Layout _lastLayout = null;
 	    private ObservableCollection<T> _items;
+	    private bool _savingState;
 
-	    #endregion
+        #endregion
 
-		#region Properties
+        #region Properties
 
-		public virtual TokenClickStyle TokenClickStyle { get; private set; }
+        public TokenDeleteStyle TokenDeletionStyle { get; protected set; } = TokenDeleteStyle._Parent;
+
+        public virtual TokenClickStyle TokenClickStyle { get; protected set; }
 
 		public bool IsTokenClickStyleSelectable
 		{
@@ -106,7 +110,7 @@ namespace Codenutz.Controls
 			}
 		}
 
-		public virtual bool AllowDuplicates { get; private set; }
+		public virtual bool AllowDuplicates { get; protected set; }
 
 		public virtual bool PerformBestGuess { get; set; }
 
@@ -239,7 +243,7 @@ namespace Codenutz.Controls
 				Filter.InvokeFilter(text.SubSequenceFormatted(start, end), this);
 			}
 		}
-
+        
 		public override IInputConnection OnCreateInputConnection(EditorInfo outAttrs)
 		{
 			var conn = new TokenInputConnection<T>(base.OnCreateInputConnection(outAttrs), true,this);
@@ -258,6 +262,13 @@ namespace Codenutz.Controls
 			}
 			return handled;
 		}
+
+	    public void TrySomething()
+	    {
+            //PerformFiltering("test", (int)Keycode.A);
+            base.PerformFiltering("test", (int)Keycode.A);
+            //base.OnKeyDown(Keycode.A, new KeyEvent(KeyEventActions.Down, Keycode.A));
+	    }
 
 		public override bool OnKeyDown(Keycode keyCode, KeyEvent e)
 		{
@@ -763,7 +774,7 @@ namespace Codenutz.Controls
 			_selectedItem = GetSelectedItem(selectedItem);
 
 			ICharSequence result = null;
-			switch (_deletionStyle)
+			switch (TokenDeletionStyle)
 			{
 				case TokenDeleteStyle.Clear:
 					result = String.Empty.ToAndroidString();
@@ -848,7 +859,7 @@ namespace Codenutz.Controls
 			}
 		}
 
-		private void AddListeners()
+		protected void AddListeners()
 		{
 			if (EditableText != null)
 			{
@@ -857,7 +868,7 @@ namespace Codenutz.Controls
 			}
 		}
 
-		private void RemoveListeners()
+		protected void RemoveListeners()
 		{
 			if (EditableText != null)
 			{
@@ -913,11 +924,17 @@ namespace Codenutz.Controls
 			}
 		}
 
-		#endregion
-		
-		#region IOnEditorActionListener members
+        #endregion
 
-		public bool OnEditorAction(TextView v, ImeAction actionId, KeyEvent e)
+        #region Save state
+
+        
+
+        #endregion
+
+        #region IOnEditorActionListener members
+
+        public bool OnEditorAction(TextView v, ImeAction actionId, KeyEvent e)
 		{
 			if (actionId == ImeAction.Done)
 			{
@@ -930,30 +947,61 @@ namespace Codenutz.Controls
 		#endregion
 	}
 
-	//public class SavedState<T> : View.BaseSavedState
-	//{
-	//	private string prefix;
-	//	private bool allowCollpase;
-	//	private bool allowDuplicates;
-	//	private bool performBestGuess;
-	//	private TokenClickStyle tokenClickStyle;
-	//	private TokenDeleteStyle tokenDeleteStyle;
-	//	private List<T> baseObjects; 
-		
-	//	public SavedState(Parcel source) : base(source)
-	//	{
+    public abstract class SavedState<T> : View.BaseSavedState
+    {
+        public string Prefix { get; set; }
 
-	//	}
+        public bool AllowCollapse { get; set; }
+        public bool AllowDuplicates { get; set; }
+        public bool PerformBestGuess { get; set; }
+        public TokenClickStyle TokenClickStyle { get; set; }
+        public TokenDeleteStyle TokenDeleteStyle { get; set; }
+        public ObservableCollection<T> Items { get; set; }
+        public char[] SplitChars { get; set; }
 
-	//	public SavedState(IParcelable superState) : base(superState)
-	//	{
-	//	}
+        
+        public SavedState(Parcel source) : base(source)
+        {
 
-	//	public override void WriteToParcel(Parcel dest, ParcelableWriteFlags flags)
-	//	{
-	//		base.WriteToParcel(dest, flags);
+        }
 
-	//		dest.WriteSerializable();
-	//	}
-	//}
+        public SavedState(IParcelable superState) : base(superState)
+        {
+        }
+
+
+    }
+
+
+    public sealed class GenericParcelableCreator<T> : Java.Lang.Object, IParcelableCreator
+    where T : Java.Lang.Object, new()
+    {
+        private readonly Func<Parcel, T> _createFunc;
+        
+        public GenericParcelableCreator(Func<Parcel, T> createFromParcelFunc)
+        {
+            _createFunc = createFromParcelFunc;
+        }
+
+        #region IParcelableCreator Implementation
+
+        public Java.Lang.Object CreateFromParcel(Parcel source)
+        {
+            return _createFunc(source);
+        }
+
+        public Java.Lang.Object[] NewArray(int size)
+        {
+            return new T[size];
+        }
+
+        #endregion
+    }
+
+
+
+    //public class SavedStateCreator : Object, IParcelableCreator
+    //{
+
+    //}
 }
