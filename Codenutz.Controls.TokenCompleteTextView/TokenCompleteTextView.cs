@@ -25,7 +25,7 @@ namespace Codenutz.Controls
 {
 	public abstract class TokenCompleteTextView<T> : MultiAutoCompleteTextView, TextView.IOnEditorActionListener where T:class
 	{
-		#region Constants
+        #region Constants
 
 		public const string TAG = "TokenAutoComplete";
 
@@ -149,7 +149,7 @@ namespace Codenutz.Controls
 
 		protected TokenCompleteTextView(Context context) : base(context)
 		{
-			Prefix = String.Empty;
+		    Prefix = String.Empty;
 			Initialize();
 		}
 
@@ -171,13 +171,15 @@ namespace Codenutz.Controls
 			Initialize();
 		}
 
-		#endregion
-		
-		#region Abstract methods
+        #endregion
 
-		abstract protected View GetViewForObject(T target);
+        #region Abstract methods
 
-		abstract protected T DefaultObject(String completionText);
+        abstract protected View GetViewForObject(T target);
+
+        abstract protected T DefaultObject(String completionText);
+
+	    abstract protected TokenCompleteTextViewSavedState<T> CreateSavedState(IParcelable superState); 
 
 		#endregion
 
@@ -928,7 +930,70 @@ namespace Codenutz.Controls
 
         #region Save state
 
-        
+        public override IParcelable OnSaveInstanceState()
+        {
+            RemoveListeners();
+
+            _savingState = true;
+            var superState = base.OnSaveInstanceState();
+            _savingState = false;
+            var state = CreateSavedState(superState);
+
+            state.Prefix = Prefix;
+            state.AllowCollapse = AllowCollapse;
+            state.AllowDuplicates = AllowDuplicates;
+            state.PerformBestGuess = PerformBestGuess;
+            state.TokenClickStyle = TokenClickStyle;
+            state.TokenDeleteStyle = TokenDeletionStyle;
+            state.Items = Items;
+
+            //Temporarily removed until I can work out whats causing the exception witrh SetTokenizer
+            //state.SplitChars = SplitChars;
+
+            AddListeners();
+
+            return state;
+        }
+
+        public override void OnRestoreInstanceState(IParcelable state)
+        {
+            if (!(state is TokenCompleteTextViewSavedState<T>))
+            {
+                base.OnRestoreInstanceState(state);
+                return;
+            }
+
+            var ss = (TokenCompleteTextViewSavedState<T>)state;
+            base.OnRestoreInstanceState(ss.SuperState);
+
+            Text = ss.Prefix;
+            Prefix = ss.Prefix;
+            UpdateHint();
+            AllowCollapse = ss.AllowCollapse;
+            AllowDuplicates = ss.AllowDuplicates;
+            PerformBestGuess = ss.PerformBestGuess;
+            TokenClickStyle = ss.TokenClickStyle;
+            TokenDeletionStyle = ss.TokenDeleteStyle;
+
+            //Temporarily removed until I can work out whats causing the exception witrh SetTokenizer
+            //SplitChars = ss.SplitChars;
+
+            AddListeners();
+            foreach (var item in ss.Items)
+            {
+                AddItem(item);
+            }
+
+            // Collapse the view if necessary
+            if (!IsFocused && AllowCollapse)
+            {
+                Post(() =>
+                {
+                    PerformCollapse(IsFocused);
+                });
+            }
+
+        }
 
         #endregion
 
@@ -946,62 +1011,4 @@ namespace Codenutz.Controls
 
 		#endregion
 	}
-
-    public abstract class SavedState<T> : View.BaseSavedState
-    {
-        public string Prefix { get; set; }
-
-        public bool AllowCollapse { get; set; }
-        public bool AllowDuplicates { get; set; }
-        public bool PerformBestGuess { get; set; }
-        public TokenClickStyle TokenClickStyle { get; set; }
-        public TokenDeleteStyle TokenDeleteStyle { get; set; }
-        public ObservableCollection<T> Items { get; set; }
-        public char[] SplitChars { get; set; }
-
-        
-        public SavedState(Parcel source) : base(source)
-        {
-
-        }
-
-        public SavedState(IParcelable superState) : base(superState)
-        {
-        }
-
-
-    }
-
-
-    public sealed class GenericParcelableCreator<T> : Java.Lang.Object, IParcelableCreator
-    where T : Java.Lang.Object, new()
-    {
-        private readonly Func<Parcel, T> _createFunc;
-        
-        public GenericParcelableCreator(Func<Parcel, T> createFromParcelFunc)
-        {
-            _createFunc = createFromParcelFunc;
-        }
-
-        #region IParcelableCreator Implementation
-
-        public Java.Lang.Object CreateFromParcel(Parcel source)
-        {
-            return _createFunc(source);
-        }
-
-        public Java.Lang.Object[] NewArray(int size)
-        {
-            return new T[size];
-        }
-
-        #endregion
-    }
-
-
-
-    //public class SavedStateCreator : Object, IParcelableCreator
-    //{
-
-    //}
 }

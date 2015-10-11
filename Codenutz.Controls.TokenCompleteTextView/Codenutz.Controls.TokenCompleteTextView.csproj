@@ -47,6 +47,7 @@
     <Compile Include="CountSpan.cs" />
     <Compile Include="Extensions\IEditableExtensions.cs" />
     <Compile Include="Adapters\FilteredArrayAdapter.cs" />
+    <Compile Include="GenericParcelableCreator.cs" />
     <Compile Include="HintSpan.cs" />
     <Compile Include="ITokenListener.cs" />
     <Compile Include="JavaObjectWrapper.cs" />
@@ -57,6 +58,7 @@
     <Compile Include="TextFilter.cs" />
     <Compile Include="TokenClickStyle.cs" />
     <Compile Include="TokenCompleteTextView.cs" />
+    <Compile Include="TokenCompleteTextViewSavedState.cs" />
     <Compile Include="TokenDeleteStyle.cs" />
     <Compile Include="TokenImageSpan.cs" />
     <Compile Include="TokenInputConnection.cs" />

@@ -58,6 +58,11 @@ namespace TestApp
             return "xxx";
         }
 
+        protected override TokenCompleteTextViewSavedState<string> CreateSavedState(IParcelable superState)
+        {
+            return new MyTokenCompleteTextViewSavedState(superState);
+        }
+
         public override TokenClickStyle TokenClickStyle
         {
             get { return TokenClickStyle.SelectDeselect; }
@@ -68,82 +73,21 @@ namespace TestApp
             get { return false; }
         }
 
-        public override IParcelable OnSaveInstanceState()
-        {
-            //return base.OnSaveInstanceState();
-
-            RemoveListeners();
-
-            //_savingState = true;
-            var superState = base.OnSaveInstanceState();
-            //_savingState = false;
-            var state = new MySavedState(superState);
-
-            state.Prefix = Prefix;
-            state.AllowCollapse = AllowCollapse;
-            state.AllowDuplicates = AllowDuplicates;
-            state.PerformBestGuess = PerformBestGuess;
-            state.TokenClickStyle = TokenClickStyle;
-            state.TokenDeleteStyle = TokenDeletionStyle;
-            state.Items = Items;
-            state.SplitChars = SplitChars;
-
-            AddListeners();
-
-            return state;
-        }
-
-        public override void OnRestoreInstanceState(IParcelable state)
-        {
-            if (!(state is MySavedState))
-            {
-                base.OnRestoreInstanceState(state);
-                return;
-            }
-
-            var ss = (MySavedState) state;
-            base.OnRestoreInstanceState(ss.SuperState);
-
-            Text = ss.Prefix;
-            Prefix = ss.Prefix;
-            UpdateHint();
-            AllowCollapse = ss.AllowCollapse;
-            AllowDuplicates = ss.AllowDuplicates;
-            PerformBestGuess = ss.PerformBestGuess;
-            TokenClickStyle = ss.TokenClickStyle;
-            TokenDeletionStyle = ss.TokenDeleteStyle;
-            SplitChars = ss.SplitChars;
-
-            AddListeners();
-            foreach (var item in ss.Items)
-            {
-                AddItem(item);
-            }
-
-            // Collapse the view if necessary
-            if (!IsFocused && AllowCollapse)
-            {
-                Post(() =>
-                {
-                    PerformCollapse(IsFocused);
-                });
-            }
-
-        }
+       
     }
 
-    public class MySavedState : SavedState<string>
+    public class MyTokenCompleteTextViewSavedState : TokenCompleteTextViewSavedState<string>
     {
-        public MySavedState() : base(source: null)
+        public MyTokenCompleteTextViewSavedState() : base(source: null)
         {
 
         }
 
-        public MySavedState(Parcel source) : base(source)
+        public MyTokenCompleteTextViewSavedState(Parcel source) : base(source)
         {
         }
 
-        public MySavedState(IParcelable superState) : base(superState)
+        public MyTokenCompleteTextViewSavedState(IParcelable superState) : base(superState)
         {
         }
 
@@ -155,11 +99,11 @@ namespace TestApp
         }
 
 
-        private static readonly Codenutz.Controls.GenericParcelableCreator<MySavedState> _creator = 
-            new Codenutz.Controls.GenericParcelableCreator<MySavedState>((parcel) => new MySavedState(parcel));
+        private static readonly Codenutz.Controls.GenericParcelableCreator<MyTokenCompleteTextViewSavedState> _creator = 
+            new Codenutz.Controls.GenericParcelableCreator<MyTokenCompleteTextViewSavedState>((parcel) => new MyTokenCompleteTextViewSavedState(parcel));
 
         [ExportField("CREATOR")]
-        public static Codenutz.Controls.GenericParcelableCreator<MySavedState> GetCreator()
+        public static Codenutz.Controls.GenericParcelableCreator<MyTokenCompleteTextViewSavedState> GetCreator()
         {
             return _creator;
         }
