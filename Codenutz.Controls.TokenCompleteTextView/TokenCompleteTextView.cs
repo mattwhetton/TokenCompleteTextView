@@ -76,7 +76,7 @@ namespace Codenutz.Controls
 		public virtual string Prefix
 		{
 			get { return _prefix; }
-		    protected set
+		    set
 			{
 				_prefix = String.Empty;
 				if (EditableText != null)
