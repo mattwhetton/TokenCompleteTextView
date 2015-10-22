@@ -23,7 +23,8 @@ using Java.Interop;
 
 namespace Codenutz.Controls
 {
-	public abstract class TokenCompleteTextView<T> : MultiAutoCompleteTextView, TextView.IOnEditorActionListener where T:class
+	public abstract class TokenCompleteTextView<T> : MultiAutoCompleteTextView, TextView.IOnEditorActionListener 
+		where T:class
 	{
         #region Constants
 
@@ -56,6 +57,10 @@ namespace Codenutz.Controls
 
         public virtual TokenClickStyle TokenClickStyle { get; protected set; }
 
+		public bool IsTokenRemovable(T token) {
+			return true;
+		}
+
 		public bool IsTokenClickStyleSelectable
 		{
 			get
@@ -78,6 +83,8 @@ namespace Codenutz.Controls
 			get { return _prefix; }
 		    set
 			{
+				if (_prefix == value)
+					return;
 				_prefix = String.Empty;
 				if (EditableText != null)
 					EditableText.Insert(0, value);
@@ -143,31 +150,26 @@ namespace Codenutz.Controls
 
 		protected TokenCompleteTextView(IntPtr javaReference, JniHandleOwnership transfer) : base(javaReference, transfer)
 		{
-			Prefix = String.Empty;
 			Initialize();
 		}
 
 		protected TokenCompleteTextView(Context context) : base(context)
 		{
-		    Prefix = String.Empty;
 			Initialize();
 		}
 
 		protected TokenCompleteTextView(Context context, IAttributeSet attrs) : base(context, attrs)
 		{
-			Prefix = String.Empty;
 			Initialize();
 		}
 
 		protected TokenCompleteTextView(Context context, IAttributeSet attrs, int defStyleAttr) : base(context, attrs, defStyleAttr)
 		{
-			Prefix = String.Empty;
 			Initialize();
 		}
 
 		protected TokenCompleteTextView(Context context, IAttributeSet attrs, int defStyleAttr, int defStyleRes) : base(context, attrs, defStyleAttr, defStyleRes)
 		{
-			Prefix = String.Empty;
 			Initialize();
 		}
 
@@ -248,10 +250,15 @@ namespace Codenutz.Controls
         
 		public override IInputConnection OnCreateInputConnection(EditorInfo outAttrs)
 		{
-			var conn = new TokenInputConnection<T>(base.OnCreateInputConnection(outAttrs), true,this);
-			outAttrs.ImeOptions &= ImeFlags.NoEnterAction;
-			outAttrs.ImeOptions |= ImeFlags.NoExtractUi;
-			return conn;
+			var superConn = base.OnCreateInputConnection(outAttrs);
+			if (superConn != null) {
+				var conn = new TokenInputConnection<T>(this, superConn, true);
+				outAttrs.ImeOptions &= ImeFlags.NoEnterAction;
+				outAttrs.ImeOptions |= ImeFlags.NoExtractUi;
+				return conn;
+			} else {
+				return null;
+			}
 		}
 
 		public override bool OnKeyUp(Keycode keyCode, KeyEvent e)
@@ -287,11 +294,47 @@ namespace Codenutz.Controls
 					}
 					break;
 				case Keycode.Del:
-					handled = DeleteSelectedObject(false);
+					handled =  !CanDeleteSelection(1) || DeleteSelectedObject(false);
 					break;
 			}
 
 			return handled || base.OnKeyDown(keyCode, e);
+		}
+
+		public bool CanDeleteSelection(int beforeLength){
+			if (Items.Count < 1)
+				return true;
+
+			var text = EditableText;
+
+			int endSelection = SelectionEnd;
+			int startSelection = beforeLength == 1 ? SelectionStart : endSelection - beforeLength;
+
+			TokenImageSpan<T>[] spans = text.GetSpans<TokenImageSpan<T>>(0, Text.Length);
+
+			foreach (var span in spans) {
+				int startTokenSelection = text.GetSpanStart(span);
+				int endTokenSelection = text.GetSpanEnd(span);
+
+				// moving on, no need to check this token
+				if (IsTokenRemovable(span.Token)) continue;
+
+				if (startSelection == endSelection) {
+					// Delete single
+					if (endTokenSelection + 1 == endSelection) {
+						return false;
+					}
+				} else {
+					// Delete range
+					// Don't delete if a non removable token is in range
+					if (startSelection <= startTokenSelection
+						&& endTokenSelection + 1 <= endSelection) {
+						return false;
+					}
+				}
+			}
+
+			return true;
 		}
 
 		public override bool OnTouchEvent(MotionEvent e)
@@ -354,8 +397,6 @@ namespace Codenutz.Controls
 
 			if(AllowCollapse) PerformCollapse(HasFocus);
 		}
-
-		
 
 		protected override void OnSelectionChanged(int selStart, int selEnd)
 		{
@@ -1010,5 +1051,8 @@ namespace Codenutz.Controls
 		}
 
 		#endregion
+
 	}
+
+
 }
