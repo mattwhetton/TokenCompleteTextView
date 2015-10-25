@@ -28,12 +28,22 @@ namespace Codenutz.Controls
 				}	
 			}
 
-			if (dstart < TokenCompleteTextView.Prefix.Length && dend == TokenCompleteTextView.Prefix.Length)
+			if (dstart < TokenCompleteTextView.Prefix.Length)
 			{
-				return TokenCompleteTextView.Prefix.Substring(dstart, dend).ToAndroidString();
+			    var prefixFormatted = TokenCompleteTextView.Prefix.ToAndroidString();
+			    if (dend <= TokenCompleteTextView.Prefix.Length)
+                {
+                    //Don't do anything
+                    return prefixFormatted.SubSequenceFormatted(dstart, dend);
+                }
+                else
+                {
+                    //Delete everything up to the prefix
+                    return prefixFormatted.SubSequenceFormatted(dstart, TokenCompleteTextView.Prefix.Length);
+                }
 			}
 
-			return null;
+		    return null;
 		}
 
 
