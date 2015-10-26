@@ -44,10 +44,9 @@ namespace Codenutz.Controls
 	    private bool _shouldFocusNext = false;
 		private TokenTextWatcher<T> _textWatcher;
 		private TokenSpanWatcher<T> _spanWatcher;
-		private string _prefix;
+		private string _prefix = String.Empty;
 		private Layout _lastLayout = null;
 	    private ObservableCollection<T> _items;
-	    private bool _savingState;
 
         #endregion
 
@@ -83,12 +82,9 @@ namespace Codenutz.Controls
 			get { return _prefix; }
 		    set
 			{
-				if (_prefix == value)
-					return;
 				_prefix = String.Empty;
-				if (EditableText != null)
-					EditableText.Insert(0, value);
-				_prefix = value;
+			    EditableText?.Insert(0, value);
+			    _prefix = value;
 				UpdateHint();
 			}
 		}
@@ -135,7 +131,7 @@ namespace Codenutz.Controls
 				{
 					start = Prefix.Length;
 				}
-				return TextUtils.Substring(EditableText, start, end);
+			    return TextUtils.Substring(EditableText, start, end);
 			}
 		}
 
@@ -413,8 +409,15 @@ namespace Codenutz.Controls
 					ClearSelections();
 			}
 
+		    if (EditableText == null || String.IsNullOrWhiteSpace(EditableText.ToString()))
+		    {
+                base.OnSelectionChanged(selStart, selEnd);
+                return;
+		    }
+
 			if (Prefix != null && (selStart < Prefix.Length || selEnd < Prefix.Length))
 			{
+			    
 				SetSelection(Prefix.Length);
 			}
 			else
@@ -622,6 +625,9 @@ namespace Codenutz.Controls
 
 			var editable = EditableText;
 
+		    if (editable == null)
+		        return;
+
 			if (!AllowCollapse || IsFocused || !_hiddenSpans.Any())
 			{
 				var offset = editable.Length();
@@ -668,7 +674,7 @@ namespace Codenutz.Controls
 			InsertSpan(span.Token);
 		}
 
-		public void InsertItem(T item, string sourceText)
+		public void AddItem(T item, string sourceText)
 		{
 			Post(() =>
 			{
@@ -682,7 +688,7 @@ namespace Codenutz.Controls
 
 		public void AddItem(T item)
 		{
-			InsertItem(item, String.Empty);
+            AddItem(item, String.Empty);
 		}
 
 		public void RemoveItem(T item)
@@ -975,9 +981,9 @@ namespace Codenutz.Controls
         {
             RemoveListeners();
 
-            _savingState = true;
+            IsInSavingState = true;
             var superState = base.OnSaveInstanceState();
-            _savingState = false;
+            IsInSavingState = false;
             var state = CreateSavedState(superState);
 
             state.Prefix = Prefix;
