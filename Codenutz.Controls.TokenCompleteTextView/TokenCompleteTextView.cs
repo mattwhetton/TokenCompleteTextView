@@ -26,6 +26,8 @@ namespace Codenutz.Controls
 	public abstract class TokenCompleteTextView<T> : MultiAutoCompleteTextView, TextView.IOnEditorActionListener 
 		where T:class
 	{
+	    public EventHandler<EventArgs> StateRestored;
+
         #region Constants
 
 		public const string TAG = "TokenAutoComplete";
@@ -74,7 +76,7 @@ namespace Codenutz.Controls
 				}
 			}
 		}
-
+        
 		public virtual int TokenLimit { get; protected set; }
 
 		public virtual string Prefix
@@ -724,23 +726,27 @@ namespace Codenutz.Controls
 			});
 		}
 
-		public void Clear()
+		public void Clear(bool postToQueue = true)
 		{
-			Post(() =>
-			{
-				var text = EditableText;
-				if (text == null) return;
+		    Action clearAction = () =>
+		    {
+		        var text = EditableText;
+		        if (text == null) return;
 
-				var spans = text.GetSpans<TokenImageSpan<T>>(0, text.Length());
-				foreach (var span in spans)
-				{
-					RemoveSpan(span);
-					_spanWatcher.OnSpanRemoved(text, span, text.GetSpanStart(span), text.GetSpanEnd(span));
-				}
-			});
+		        var spans = text.GetSpans<TokenImageSpan<T>>(0, text.Length());
+		        foreach (var span in spans)
+		        {
+		            RemoveSpan(span);
+		            _spanWatcher.OnSpanRemoved(text, span, text.GetSpanStart(span), text.GetSpanEnd(span));
+		        }
+		    };
+            if(postToQueue)
+		        Post(clearAction);
+            else
+                clearAction.Invoke();
 		}
 
-		public bool IsSplitChar(char c)
+	    public bool IsSplitChar(char c)
 		{
 			return SplitChars.Contains(c);
 		}
@@ -864,8 +870,8 @@ namespace Codenutz.Controls
 		private void Initialize()
 		{
 			if (_isInitialized) return;
-
-			TokenLimit = -1;
+            
+            TokenLimit = -1;
 
 			TokenClickStyle = TokenClickStyle.None;
 
@@ -1043,6 +1049,10 @@ namespace Codenutz.Controls
                 });
             }
 
+            Post(() =>
+            {
+                StateRestored?.Invoke(this, EventArgs.Empty);
+            });
         }
 
         #endregion
