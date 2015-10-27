@@ -512,7 +512,10 @@ namespace Codenutz.Controls
 						{
 							lastPosition++;
 
+							var xxx = text.Length();
+
 							var cs = new CountSpan(count, Context, new Color(CurrentTextColor), (int)TextSize, (int)MaxTextWidth);
+
 							text.Insert(lastPosition, cs.Text);
 
 							var newWidth = Layout.GetDesiredWidth(text, 09, lastPosition + cs.Text.Length, _lastLayout.Paint);
