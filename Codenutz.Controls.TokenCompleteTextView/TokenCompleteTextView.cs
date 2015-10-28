@@ -26,6 +26,7 @@ namespace Codenutz.Controls
 	public abstract class TokenCompleteTextView<T> : MultiAutoCompleteTextView, TextView.IOnEditorActionListener 
 		where T:class
 	{
+		public EventHandler<EventArgs> StateRestoring;
 	    public EventHandler<EventArgs> StateRestored;
 
         #region Constants
@@ -1013,6 +1014,11 @@ namespace Codenutz.Controls
 
         public override void OnRestoreInstanceState(IParcelable state)
         {
+
+			Post (() => {
+				StateRestoring?.Invoke (this, EventArgs.Empty);
+			});
+
             if (!(state is TokenCompleteTextViewSavedState<T>))
             {
                 base.OnRestoreInstanceState(state);
