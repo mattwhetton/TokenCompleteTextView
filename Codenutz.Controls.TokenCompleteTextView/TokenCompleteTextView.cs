@@ -514,14 +514,12 @@ namespace Codenutz.Controls
 						if (count > 0 && countSpans.Length == 0)
 						{
 							lastPosition++;
-
-							var xxx = text.Length();
-
+                            
 							var cs = new CountSpan(count, Context, new Color(CurrentTextColor), (int)TextSize, (int)MaxTextWidth);
 
 							text.Insert(lastPosition, cs.Text);
 
-							var newWidth = Layout.GetDesiredWidth(text, 09, lastPosition + cs.Text.Length, _lastLayout.Paint);
+							var newWidth = Layout.GetDesiredWidth(text, 0, lastPosition + cs.Text.Length, _lastLayout.Paint);
 
 							if (newWidth > MaxTextWidth)
 							{
@@ -623,7 +621,7 @@ namespace Codenutz.Controls
 			if(AllowCollapse && !IsFocused)
 				UpdateCountSpan();
 		}
-		
+        
 		public void InsertSpan(T item, string sourceText)
 		{
 			var ssb = BuildSpannableForText(sourceText);
@@ -656,7 +654,7 @@ namespace Codenutz.Controls
 
 				if (!IsFocused && AllowCollapse) PerformCollapse(false);
 
-				if (!Items.Contains(tokenSpan.Token)) //not sure if this is right?!
+				if (!Items.Contains(item)) //not sure if this is right?!
 				{
 					_spanWatcher.OnSpanAdded(editable, tokenSpan, 0, 0);
 				}
@@ -667,8 +665,7 @@ namespace Codenutz.Controls
 				_spanWatcher.OnSpanAdded(editable, tokenSpan, 0, 0);
 				UpdateCountSpan();
 			}
-
-		}
+        }   
 
 		public void InsertSpan(T item)
 		{
@@ -1002,7 +999,7 @@ namespace Codenutz.Controls
             state.PerformBestGuess = PerformBestGuess;
             state.TokenClickStyle = TokenClickStyle;
             state.TokenDeleteStyle = TokenDeletionStyle;
-            state.Items = Items;
+            state.Items = new ObservableCollection<T>(Items);
 
             //Temporarily removed until I can work out whats causing the exception witrh SetTokenizer
             //state.SplitChars = SplitChars;
